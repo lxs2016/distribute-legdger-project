@@ -1,0 +1,59 @@
+# Dependencies
+node_modules/
+
+# Build output
+artifacts/
+cache/
+out/
+build/
+
+# Remix IDE state
+.states/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Coverage reports
+coverage/
+coverage.json
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Hardhat
+typechain/
+typechain-types/
+
+# Foundry
+lib/
+broadcast/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Package manager lock files (uncomment if you want to ignore them)
+# package-lock.json
+# yarn.lock
+
+# opencode
+.sisyphus/

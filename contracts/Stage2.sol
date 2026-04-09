@@ -157,7 +157,7 @@ contract Stage2{
     // 赌局结算 
     // 随机种子：使用 A 和 B 的私钥、区块号、时间戳和参与者地址
     // 结果：赢的人拿走所有赌注和stage1中token奖励
-    function _diceGameSettle() private {
+    function _diceGameSettle() private nonReentrant{
         // 使用多个熵源生成更安全的随机数
         // 包括：双方秘密、区块号、区块时间戳、参与者地址
         bytes32 randomSeed = keccak256(abi.encodePacked(
@@ -181,14 +181,12 @@ contract Stage2{
         diceGameState = DiceGameState.Settled;
         emit DiceGameSettled(winner, profits, stage1TokenBonus);
 
-        address actualWinner = winner;
-
         // 先 reset 再转账
         _reset(); 
-        (bool sent, ) = payable(actualWinner).call{value: profits}("");
+        (bool sent, ) = payable(winner).call{value: profits}("");
         require(sent, "Bet profits failed to send");
         if (stage1TokenBonus > 0) {
-            bool tokenSent = tokenContract.transfer(actualWinner, stage1TokenBonus);
+            bool tokenSent = tokenContract.transfer(winner, stage1TokenBonus);
             require(tokenSent, "Stage1token bonus failed to send");
         }
     }
@@ -248,14 +246,12 @@ contract Stage2{
         diceGameState = DiceGameState.Settled;
         emit DiceGameSettled(winner, profits, stage1TokenBonus);
 
-        address actualWinner = winner;
-
         // 先 reset 再转账
         _reset(); 
-        (bool sent, ) = payable(actualWinner).call{value: profits}("");
+        (bool sent, ) = payable(winner).call{value: profits}("");
         require(sent, "Bet profits failed to send");
         if (stage1TokenBonus > 0) {
-            bool tokenSent = tokenContract.transfer(actualWinner, stage1TokenBonus);
+            bool tokenSent = tokenContract.transfer(winner, stage1TokenBonus);
             require(tokenSent, "Stage1token bonus failed to send");
         }
     }

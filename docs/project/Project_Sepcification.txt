@@ -1,0 +1,387 @@
+Project:
+Token-Backed Rolling the Dice
+COMP5521: Distributed Ledger Technology, Cryptocurrency and E-Payment
+January 28, 2026
+1 Overview
+This assignment consists of two dependent stages on theSepoliaEthereum test network.
+This project may be completedindividuallyor in a team oftwo students.
+1.Stage 1 (Token Contract):Implement and deploy a custom token smart contract thatex-
+actlymatches a required public API. The API must not be extended with any additional public
+variables or public functions.
+2.Stage 2 (Dice Game Contract):Implement a two-player gambling game (“Rolling the Dice”)
+that produces a random numbern∈ {1,2,3,4,5,6}, determines the winner, and pays outtoken
+rewardsusing the Stage 1 token deployed on Sepolia. Thebetting mechanism is open-
+endedand must be designed and justified by the team.
+Mandatory focus:You must treatsecurityandfairnessas first-class requirements, includ-
+ing (but not limited to) smart contract code security (e.g., reentrancy) and mechanism security
+(e.g., preventing regret/abort after learning an unfavorable outcome). Your report must include a
+dedicated chapteron security and fairness design.
+2 Learning Objectives
+By completing this assignment, students will demonstrate the ability to:
+•Implement a Solidity contract against a strict public API specification.
+•Deploy and interact with contracts on Sepolia and produce verifiable on-chain evidence (ad-
+dresses, transaction hashes).
+•Design a two-player game protocol with robust security and fairness properties.
+•Reason about adversarial behavior (both at the code level and the game/mechanism level) and
+propose concrete mitigations.
+•Measure and discuss gas costs and fairness implications (who pays gas, whether costs are sym-
+metric, trade-offs).
+3 Environment and Tooling
+3.1 Network
+All deployments and demonstrations must be performed onSepolia.
+13.2 Recommended Tooling
+•Remix is recommendedfor compilation, deployment, and interaction demonstrations (re-
+quired for the video demo).
+•Any local development stack (Hardhat/Foundry/Truffle) is allowed, provided the submitted con-
+tracts compile and deploy on Sepolia.
+3.3 Solidity Version
+Use Solidity0.8.x. You must specify the pragma version in your source files.
+4 Stage 1: Token Contract (Strict API)
+4.1 Stage 1 Requirements
+You must implement a custom token contract with theexactpublic API below. You must:
+•Implementeveryvariable, event, and function listed.
+•Notrename anything.
+•Notchange parameter lists or return types.
+•Notaddanyotherpublicvariables orpublic/externalfunctions.
+•You may add private/internal variables and private/internal helper functions as needed.
+4.2 Required Public API (Must Match Exactly)
+Your token contract must include:
+State / Variables
+•owner: apublic payable addressdefining the contract owner (the deployer).
+Events
+•Transfer(address indexed from, address indexed to, uint256 value)
+•Mint(address indexed to, uint256 value)
+•Sell(address indexed from, uint256 value)
+View Functions
+•totalSupply(): returnsuint256total minted tokens.
+•balanceOf(address account): returnsuint256token balance.
+•getName(): returnsstringtoken name.
+•getSymbol(): returnsstringtoken symbol.
+•getPrice(): returnsuint128token price.
+2State-Changing Functions
+•transfer(address to, uint256 value) returns (bool)
+–Transfersvaluetokens frommsg.sendertoto.
+–On success: emitTransfer(from,to,value)and returntrue.
+•mint(address to, uint256 value) returns (bool)
+–Onlyownermay call.
+–Createsvaluenew tokens and assigns them toto.
+–On success: emitMint(to,value)and returntrue.
+•sell(uint256 value) returns (bool)
+–Enables a user to sell tokens for wei at a price of600 wei per token.
+–Sold tokens are removed from circulating supply.
+–On success: emitSell(from,value)and returntrue.
+•close()
+–Onlyownermay call.
+–Destroys the contract and transfers the contract’s remaining wei balance toowner.
+Fallback and Constructor
+•Afallbackthat enables anyone to send Ether to the contract account.
+•Aconstructorthat initializes the contract as needed.
+4.3 Stage 1 Deployment and Evidence
+You must:
+•Deploy the token contract to Sepolia.
+•Demonstrate, on-chain, at least one instance each of:
+–obtaining tokens viamint(),
+–transferring tokens, and
+–selling tokens viasell().
+•Record the contract address and the transaction hashes for the above interactions for inclusion
+in the report appendix.
+5 Stage 2: Rolling the Dice Game
+5.1 Core Game Specification
+Your game contract must support two players,AandB, and a computation of a random number:
+n∈ {1,2,3,4,5,6}.
+Winner rule:
+3•Ifn∈ {1,2,3}thenAwins.
+•OtherwiseBwins.
+The contract must allow new players to start a new game after a game endson the same deployed
+contract instance.
+5.2 Rewards and Betting (Open Design with Mandatory Token Bonus Pool)
+Unlike a fixed-reward specification,your overall gambling/betting and reward mechanism
+is intentionally open-ended. You may design any combination of:
+•bet types:ETH bets, token bets, or hybrid structures,
+•payout model:winner-takes-all, proportional payout, fee-based model, etc.,
+•fees and incentives:entry fees, settlement fees, rebates, or other incentive designs.
+However, there is one mandatory requirement:your dice game contract must hold alarge
+pre-funded poolof theStage 1 token at section 4(deployed by you on Sepolia), and must
+use that pool to grant anadditional token bonusto the winner upon settlement.
+Mandatory Token Bonus Pool Rule
+•The dice game contract must be pre-funded with a substantial amount of theStage 1 token.
+•Upon each successful game settlement, the contract must transfer anextra Stage 1 token
+bonusfrom this pool to the winner.
+•Thebonus amount is not prescribedby the specification. You must define:
+–how the bonus is calculated (fixed, variable, based on bet size, based on game count, etc.),
+–how you ensure the bonus does not exceed the contract’s token balance, and
+–what happens when the pool becomes insufficient (e.g., revert, cap bonus to remaining balance,
+pause new games, etc.).
+5.3 Token Integration Requirements
+•The dice game contract must be wired to anexisting deployed token contract addressfrom
+Stage 1.
+•The dice game mustnotdeploy a new token or implement a second token ledger.
+•The game must use the Stage 1 token contract’s API to transfer the winner’stoken bonusfrom
+the pre-funded pool.
+•The token bonus payment must beautonomous at settlement(i.e., it must not require the
+token contract owner to manually callmint()ortransfer()at the moment of payout).
+5.4 Design Constraints for the Betting Mechanism
+Because the betting and payout mechanism is open-ended, you must explicitly document and justify
+your design. At minimum, your design must satisfy all of the following:
+1.Solvency (for your chosen rewards):
+4•Your contract must be able to pay all promised rewards implied by your mechanism at settle-
+ment.
+•In particular, your token bonus must be paid from the pre-funded pool under the rules you
+defined (including your chosen behavior when the pool is insufficient).
+2.On-chain verifiability:
+•The flow of value must be verifiable on-chain: bets/deposits, escrow balances (if any), payouts,
+refunds, and token bonus transfers.
+•The contract should emit events for key steps (e.g., game created/joined, dice rolled, settled,
+paid out).
+3.Abuse resistance and progress guarantees:
+•Your mechanism must address adversarial behavior (e.g., griefing, refusal to proceed, denial-
+of-service).
+•The protocol must provide a path to completion (settlement or a safe refund/forfeit) even if
+one party becomes uncooperative.
+6 Security and Fairness Requirements
+6.1 High-Level Requirement
+Your Stage 1 and 2 contract should besecure,gas efficient, andfair. You should explicitly
+design for adversarial players.
+6.2 Code-Level Security (Non-Exhaustive Minimum Set)
+Your implementation must explicitly consider and mitigate, where applicable:
+•Reentrancyrisks in any path that transfers ETH or interacts with external contracts (including
+token transfers, if your design involves external callbacks or untrusted recipients).
+•DoS with revert(e.g., failed transfers causing the game to become unfinishable).
+•State machine integrity:illegal transitions, repeated settlement, double-claiming rewards,
+replay across games.
+•Access control:only intended parties can call sensitive functions in sensitive states (including
+any administrative/pool-management functionality, if present).
+•Funds safety:no permanent lock of deposits/rewards; refunds and settlement must remain
+possible under adversarial behavior.
+•Input validation:address sanity checks, zero-value edge cases, overflow/underflow assumptions
+(even with Solidity 0.8.x safety).
+6.3 Mechanism-Level Security and Fairness (Non-Exhaustive Minimum Set)
+Your protocol must explicitly address:
+•Preventing regret/abort (“I refuse to continue after learning I’m likely to lose”):
+5–You must include enforceable deadlines/timeouts and an explicit consequence (e.g., default
+loss, refund scheme, or slash) for non-cooperation.
+•Randomness manipulation resistance:
+–You must explain your randomness mechanism and why no single party can deterministically
+force a desired outcome.
+–A naive single-source randomness design (e.g., solely using one party’s input or solely using a
+miner-influenced field) is not acceptable without strong justification.
+•Front-running / information leakage considerations:
+–If any step reveals information that enables the other party to selectively proceed, you must
+mitigate and/or justify.
+•Gas fairness:
+–You must consider whether one party systematically pays more gas than the other, and justify
+or mitigate.
+•Token bonus pool integrity:
+–You must address how the token bonus pool can be drained (e.g., repeated tiny games, Sybil
+players, jackpot-style exploitation), and what design choices prevent or reduce such abuse.
+–You must specify and justify how pool insufficiency is handled without breaking correctness
+or fairness.
+6.4 Report Chapter
+Your report must contain a dedicated chapter titledSecurity & Fairness Design(or very close).
+If the chapter is missing, the maximum score will be capped.
+7 Demonstration Video (≤5 minutes)
+You must submit a video of5 minutes or lessdemonstrating that your contracts work on Sepolia.
+7.1 Video Requirements
+•Length:≤5:00.
+•Clarity: video must be legible (readable UI text, clear audio if any, stable capture).
+•Tool: useRemixfor the demonstration is sufficient (recommended).
+7.2 Required Content Checklist
+Your video must show:
+1. The Sepolia network is selected (wallet / Remix environment).
+2. Stage 1 token contract deployment and the deployed token address.
+3. At least one token acquisition (your buy/mint mechanism), one transfer, and one sell, visible in
+Remix and/or via a block explorer.
+64. Stage 2 dice contract deployment, configured to use the Stage 1 token address.
+5. A complete dice game execution (start/join, progress through your protocol, settle), resulting
+in:
+•a winner determined according to the dice rule, and
+•anadditional token bonustransferred to the winner from the dice contract’s token pool
+(bonus amount per your design).
+6. Evidence of the token bonus transfer (e.g., token balances before/after, emitted events, or block
+explorer view).
+7. You can speed up the waiting time for network confirmation in the video, but don’t cut out or
+trim the part where we’re waiting.
+8 Report
+8.1 Goal
+The report is intended to bestructured and easy to read, not a formal software design report.
+Use concise bullet points, short paragraphs, and tables/checklists.
+8.2 Length and Formatting
+•Maximum length:10 pages for the main report (excluding appendices).
+•Font size≥10pt (default size in L ATEX).
+•Appendices are unlimited length but must be clearly separated.
+•L ATEX is recommended for report.
+8.3 Report Template
+Your main report must contain the following sections in order:
+1. Deployment Summary
+•Token contract address (Sepolia).
+•Dice contract address (Sepolia).
+•Tooling used (Remix only, or Remix + local stack).
+•Brief statement of the betting/reward mechanism, including your token bonus rule and pool
+insufficiency behavior.
+2. Stage 1 Token: Design Notes
+•Internal state variables used (names and purpose).
+•How tokens are acquired (buy/mint path).
+•How sell works (600 wei/token) and how circulating supply is updated.
+•Any notable edge-case handling (e.g., insufficient balance, contract balance constraints).
+73. Stage 2 Dice Game: Protocol and State Machine
+•A state diagram or enumerated state list.
+•For each state: allowed actions, who can call, and what transitions occur.
+•Randomness approach summary (high-level; no code listing required here).
+•Betting/reward mechanism description:
+–what is bet (ETH, token, both),
+–when deposits happen,
+–refund/forfeit conditions (if any),
+–how solvency for your rewards is guaranteed,
+–how the token bonus pool is funded and how bonus size is determined.
+4. Security & Fairness DesignUse a table or checklist format. Must include:
+•Threat model:list adversaries (malicious player A/B, miner/front-runner, malicious receiver
+contract, Sybil players, etc.).
+•Code-level hazards and mitigations:at least 4 items, including reentrancy and DoS with
+revert where applicable.
+•Mechanism-level hazards and mitigations:at least 6 items, including regret/abort preven-
+tion, randomness manipulation, and token bonus pool abuse/drain risks.
+•Trade-offs:at least 2 explicit trade-offs (e.g., security vs. gas, fairness vs. simplicity, larger
+token bonus vs. pool longevity).
+5. Gas and Fairness Evaluation
+•Deployment gas for each contract.
+•Gas of a typical full game run (your main path).
+•Fairness analysis: who pays more gas and why; any mitigation (e.g., symmetric calls, reimburse-
+ment, batching).
+6. Test Evidence
+•At least one full game execution on Sepolia: transaction hashes for each step.
+•Evidence of token pool pre-funding and of token bonus transfers (event logs or balances).
+8.4 Required Appendices
+•Appendix A: Transaction History(token deploy/interactions; dice deploy/interactions; in-
+clude hashes and brief labels).
+•Appendix B: Source Code(full Solidity code, also submitted as separate files).
+•(Optional) Extra tests, screenshots, or explorer links.
+89 Submission Package
+Submit the following:
+1.Solidity source for Stage 1 token(.solfile).
+2.Solidity source for Stage 2 dice game(.solfile).
+3.PDF reportfollowing the structured template above.
+4.Video file(e.g.,.mp4) or a stable link to the video (per course policy).
+5.Completed Team Contribution Sheet(included as the last page of the PDF).
+File Naming Rules
+All submitted files must follow the naming convention below. Submissions that do not follow the
+convention may incur a penalty.
+Identifiers
+•For anindividual submission, use:
+⟨StudentID⟩
+•For ateam submission(pair), use:
+⟨StudentID1⟩ ⟨StudentID2⟩
+whereStudentID1andStudentID2are your official university student numbers, in ascending
+order (e.g.,20231234 20235678).
+Required FilenamesUse the following exact suffixes to indicate file content:
+•Stage 1 Token contract:
+⟨Identif iers⟩ Stage1Token.sol
+•Stage 2 Dice contract:
+⟨Identif iers⟩ Stage2Dice.sol
+•Report (PDF):
+⟨Identif iers⟩ Report.pdf
+•Video demo:
+⟨Identif iers⟩ Demo.mp4(or.mov, .mkvif allowed by course policy)
+9Examples
+•Individual (Student ID20231234):
+–20231234 Stage1Token.sol
+–20231234 Stage2Dice.sol
+–20231234 Report.pdf
+–20231234 Demo.mp4
+•Team (Student IDs20231234and20235678):
+–20231234 20235678 Stage1Token.sol
+–20231234 20235678 Stage2Dice.sol
+–20231234 20235678 Report.pdf
+–20231234 20235678 Demo.mp4
+Note for Teams:If working in a pair, only one student needs to submit the package, but clearly
+indicate both names and student IDs on the report and the contribution sheet.
+10 Academic Integrity
+All work must comply with the university’s academic integrity and good scholarly practice require-
+ments. You may use third-party resources (including Generative AI tools) only in accordance with
+thePolicy on the Use of Artificial Intelligence (AI)andany other course policies; any
+third-party code, libraries, templates, or AI-assisted content must be clearly attributed and, where
+required, declared in your report, and you must be able to explain and justify all submitted code
+and reasoning as your own understanding.
+10Rubric
+Component Max Points
+Stage 1: Token Contract 20
+Exact API compliance (functions, events, variables match exactly) 10
+Correct logic (mint, transfer, sell logic, price calculation) 5
+Deployment evidence on Sepolia 5
+Stage 2: Dice Game Implementation 20
+Core game logic and state machine (correct transitions, reusability) 5
+Randomness generation (security and non-determinism) 10
+Betting mechanism (solvency, betting logic, refund paths) 5
+Stage 2: Token Integration 10
+Correct usage of Stage 1 Token interface 5
+Token Bonus Pool logic (payouts, insufficiency handling) 5
+Security & Fairness (Code & Report) 30
+Code-level security (reentrancy, checks-effects-interactions, etc.) 10
+Mechanism-level security (regret/abort, front-running, fairness) 10
+Dedicated Report Chapter (Threat model, mitigations, trade-offs) 10
+Demonstration & Documentation 20
+Video Demo (clarity, completeness of checklist items) 10
+Report Quality (clarity, structure, gas analysis, test evidence) 10
+Total 100
+11Team Contribution Declaration
+Project Title:Token-Backed Rolling the Dice
+Date:
+This sheet must be filled out and signed by all team members. If you completed this project
+individually, fill in Member 1 and leave Member 2 blank.
+Member 1 Name:
+Student ID:
+Contribution Descrip-
+tion:
+(e.g., specific contracts writ-
+ten, report sections, testing,
+etc.)
+Percentage of Effort: %
+Signature:
+Member 2 Name:
+Student ID:
+Contribution Descrip-
+tion:
+(e.g., specific contracts writ-
+ten, report sections, testing,
+etc.)
+Percentage of Effort: %
+Signature:
+By signing above, we declare that the work submitted is our own and that we have adhered to the
+academic integrity policies of the course.
+12Policy on the Use of Artificial Intelligence (AI)
+This course recognizes that Generative AI tools (e.g., ChatGPT, Claude, GitHub Copilot) are
+powerful assistants for software development. However, the primary goal of this project is to assess
+yourunderstanding of Solidity, smart contract security, and mechanism design.
+Accordingly, the use of AI is permittedstrictlyunder the following guidelines.
+Permitted Uses
+You are encouraged to use AI tools for:
+•Framework & Architecture Design:Brainstorming state machine flows, discussing potential
+betting mechanisms, or understanding how to design secure randomness.
+•Debugging:pasting specific error messages or reverting code snippets to identify the root cause
+of a bug.
+•Syntax & Refactoring:Asking for help with Solidity syntax specifics, optimizing gas in a
+specific function, or formatting code.
+•Security Auditing:Asking an AI to review a specific block of code for common vulnerabilities
+(e.g., reentrancy, integer overflow).
+•Language correction:Using AI to check the grammar or flow of your written report (provided
+the original content is yours).
+Prohibited Uses
+You arestrictly prohibitedfrom:
+•Full Generation:Copy-pasting the entire assignment specification into an AI tool and submit-
+ting the output as your own work.
+•Blind Copying:Using AI-generated code that you do not understand or cannot explain. You
+may be asked to explain any line of code in your submission with the marker individually after
+you submitted your work.
+•Report Generation:Asking an AI to write the narrative sections of your report (e.g., the
+Security & Fairness analysis) from scratch. The reasoning must be your own.
+Mandatory Declaration of AI Use
+If you use AI tools at any stage of this project, you must include a section in your report (or an
+Appendix) titled”AI Usage Declaration.”This section must detail:
+1.Tools Used:(e.g., ChatGPT, GitHub Copilot).
+2.Scope of Use:A brief description of which parts of the project utilized AI (e.g., ”Used Chat-
+GPT to debug thesell()function” or ”Used AI to brainstorm the random number generation
+logic”).
+3.Verification:A statement confirming that you reviewed and tested all AI-assisted code and
+that you fully understand its logic.
+13Failure to declare AI usage or submitting work that is substantially generated by AI without attri-
+bution will be treated as a violation of academic integrity.
+14

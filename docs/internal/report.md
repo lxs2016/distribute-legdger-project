@@ -1,7 +1,6 @@
 # Token-Backed Rolling the Dice - Project Report
 
 **Course**: COMP5521: Distributed Ledger Technology, Cryptocurrency and E-Payment
-**Date**: March 2026
 
 ---
 
@@ -62,10 +61,15 @@
 
 ### State Diagram
 
-```
-[None] → [WaitingForB] → [BothBetted] → [Settled] → [None]
-   ↑           ↓               ↓
-   └─── cancelGame()    checkTimeout()
+```mermaid
+stateDiagram-v2
+    [*] --> None
+    None --> WaitingForB : A calls createDiceGame() to create a game and place a bet
+    WaitingForB --> BothBetted : B calls joinGame() to join the game and place a bet
+    WaitingForB --> None : A calls cancelGame() within 30 minutes to cancel the game
+    BothBetted --> Settled : A or B calls reveal() after both players have revealed
+    BothBetted --> Settled : After a 30-minute timeout, either player calls checkTimeout()
+    Settled --> None : Internal _reset() resets the state for the next round
 ```
 
 ### State Descriptions
@@ -130,7 +134,7 @@
 | # | Hazard | Mitigation |
 |---|--------|------------|
 | 1 | **Reentrancy** | `nonReentrant` modifier on all ETH-transferring functions (`sell()`, `close()`, `_diceGameSettle()`, `checkTimeout()`, `cancelGame()`) |
-| 2 | **DoS with Revert** | Checks-Effects-Interactions pattern: state updated before external calls; require statements with clear error messages |
+| 2 | **DoS with Revert** | Checks-Effects-Interactions pattern: state updated before external calls; require statements with clear error messages. However, if a malicious receiver contract deliberately reverts in its fallback, settlement can be blocked indefinitely (no withdraw mechanism implemented). |
 | 3 | **State Machine Integrity** | Enum-based state (`DiceGameState`) with explicit state checks in every function; custom errors for invalid transitions |
 | 4 | **Access Control** | `require(msg.sender == owner)` for owner-only functions; `require(msg.sender == gamblerA/B)` for reveal functions |
 | 5 | **Funds Safety** | No permanent locks; `cancelGame()` and `checkTimeout()` ensure funds can always be recovered |
@@ -144,7 +148,7 @@
 | 2 | **Randomness Manipulation** | Multi-source entropy (6 sources) makes single-party manipulation infeasible. Both players contribute secrets. |
 | 3 | **Front-Running** | Commit-Reveal scheme: fingerprint committed before reveal, preventing outcome prediction before commitment. |
 | 4 | **Token Pool Drain** | Fixed bonus (100 DICE) limits per-game drain. Equal bet requirement prevents micro-bets to drain pool. |
-| 5 | **Sybil Attack** | Equal ETH bets required from both sides - Sybil player must risk real ETH to win token bonus. |
+| 5 | **Sybil Attack** | Equal ETH bets required from both sides - Sybil player must risk real ETH to win token bonus. However, Sybil can still drain the pool by using two different addresses to play against each other; currently no per-address game frequency limit is implemented. |
 | 6 | **Denial of Service** | `cancelGame()` allows creator to reclaim funds if no opponent joins within 30 minutes. |
 | 7 | **Double Settlement** | State machine prevents: `require(diceGameState == BothBetted)` before settle, state set to `Settled` immediately. |
 | 8 | **Replay Attacks** | Game state resets after settlement; old secrets/fingerprints cannot be reused. |
@@ -156,6 +160,7 @@
 | 1 | **Security vs Gas Cost** | Multi-source randomness and commit-reveal require more storage and computation, increasing gas. However, this is necessary for fairness. Mitigated by using `constant` for fixed values and efficient packing. |
 | 2 | **Simplicity vs Flexibility** | Fixed 100 DICE bonus is simpler but less flexible than dynamic bonuses. Chosen for predictability and easier solvency verification. |
 | 3 | **Timeout Duration vs User Experience** | 30-minute timeout balances security (enough time for reveals) vs UX (not waiting too long). Could be parameterized in future versions. |
+| 4 | **Push vs Pull Payment** | Current implementation uses push payment (direct `call{value}` to winner). This provides simple UX but carries a small risk: malicious receiver contracts can `revert` in their fallback, potentially blocking settlement indefinitely. Ideal solution would be pull payment (withdraw pattern), but was not implemented due to added complexity and gas cost. |
 
 ---
 
@@ -219,8 +224,27 @@
 | Stage2 DICE | 10000 DICE | 9900 DICE |
 
 ---
+## Appendix A: AI Usage Declaration
 
-## Appendix A: Transaction History
+**1. Tools Used:**
+* Cursor
+* Gemini
+
+**2. Scope of Use:**
+In this project, all core work was strictly led by team members, including low-level algorithm design, the formulation and implementation of optimization strategies, as well as the design of the report structure and the writing of its core content. On this basis, the above AI tools were used only as efficiency aids, with the specific scope of use as follows:
+* **Cursor:** 
+    * Architecture design: assisted in organizing the overall state-machine transitions and architectural framework of the smart contracts.
+    * Solidity syntax and gas optimization: provided Solidity-specific syntax suggestions and optimization ideas for gas consumption in selected functions.
+    * Debugging: assisted in identifying the root causes of compilation errors and transaction reverts.
+    * Security and fairness analysis: supported code-level security review (e.g., reentrancy and DoS vulnerability checks) and mechanism-level discussion of security and fairness risks.
+* **Gemini:** 
+    * Language polishing: used only to perform English grammar checks and improve fluency for report drafts written by team members (all reasoning, design logic, and original narrative were independently produced by the team; no report paragraphs were generated from scratch by AI).
+
+**3. Verification:**
+We hereby solemnly declare that all team members have personally reviewed, tested, and iterated on all code that was suggested or generated with AI assistance. We fully understand every line of logic in the submitted contract code and its security implications, and we are able to independently explain and justify any implementation detail to course evaluators at any time. This project fully complies with the course policies on academic integrity and AI-assisted work.
+
+
+## Appendix B: Transaction History
 
 ### Stage 1 Token Transactions
 
@@ -244,7 +268,7 @@
 
 ---
 
-## Appendix B: Source Code
+## Appendix C: Source Code
 
 ### Stage1.sol
 
@@ -345,11 +369,9 @@ contract Stage1{
         return true;
     }
 
-    function close() external nonReentrant {
+    function close() external {
         require(msg.sender == owner, "only owner may call");
-        uint256 balance = address(this).balance;
-        (bool sent, ) = payable(owner).call{value: balance}("");
-        require(sent, "ETH transfer failed");
+        selfdestruct(owner);
     }
 
     receive() external payable {}
@@ -563,4 +585,3 @@ contract Stage2{
 
 ---
 
-*Report generated: March 2026*

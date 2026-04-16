@@ -87,7 +87,7 @@ contract Stage2{
 
         gamblerA = msg.sender;
         betAmount = msg.value;
-        fingerPrintForA = _fingerPrintForA;
+        fingerPrintForA = _fingerPrintForA; // A 的猜测哈希值
         revealedA = false;
         // 记录游戏创建时间
         gameCreatedAt = block.timestamp;
@@ -125,6 +125,7 @@ contract Stage2{
         // 防止重复揭示
         if (revealedA) revert RepeatedRevealed(msg.sender);
         // 校验赌注是否有效
+        // 验证：哈希(_secretA) == 之前存储的 fingerPrintForA
         if (keccak256(abi.encodePacked(_secretA)) != fingerPrintForA) revert BetMismatch(fingerPrintForA, keccak256(abi.encodePacked(_secretA))); 
      
         secretA = _secretA;
@@ -168,6 +169,7 @@ contract Stage2{
             gamblerA,
             gamblerB
         ));
+        // 骰子结果：1-6
         uint256 n = (uint256(randomSeed) % 6) + 1;
         // 默认规则：1-3 A 胜，4-6 B 胜
         winner = n <= 3 ? gamblerA : gamblerB; 

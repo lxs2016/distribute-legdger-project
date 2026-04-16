@@ -66,6 +66,7 @@ contract Stage2{
     error WrongState(DiceGameState expected, DiceGameState actual);
     error InvalidParam(string message);
     error NotBetOwner(address caller, address expected);
+    error DuplicateParticipant(address caller);
     error RepeatedRevealed(address caller);
     error BetMismatch(bytes32 expected, bytes32 actual);
 
@@ -87,7 +88,7 @@ contract Stage2{
 
         gamblerA = msg.sender;
         betAmount = msg.value;
-        fingerPrintForA = _fingerPrintForA;
+        fingerPrintForA = _fingerPrintForA; // A 的猜测哈希值
         revealedA = false;
         // 记录游戏创建时间
         gameCreatedAt = block.timestamp;
@@ -101,7 +102,7 @@ contract Stage2{
     function joinGame(bytes32 _fingerPrintForB) external payable nonReentrant {
         if (diceGameState != DiceGameState.WaitingForB) revert WrongState(DiceGameState.WaitingForB, diceGameState);
         // 不准同一个人同时参与一局游戏 防止刷token
-        if (msg.sender == gamblerA) revert WrongState(DiceGameState.WaitingForB, diceGameState);
+        if (msg.sender == gamblerA) revert DuplicateParticipant(msg.sender);
         // 下注金额对等校验
         if (msg.value != betAmount) revert InvalidParam("bet amount must match game bet amount");
         // A 赌的结果 简单校验
@@ -125,6 +126,7 @@ contract Stage2{
         // 防止重复揭示
         if (revealedA) revert RepeatedRevealed(msg.sender);
         // 校验赌注是否有效
+        // 验证：哈希(_secretA) == 之前存储的 fingerPrintForA
         if (keccak256(abi.encodePacked(_secretA)) != fingerPrintForA) revert BetMismatch(fingerPrintForA, keccak256(abi.encodePacked(_secretA))); 
      
         secretA = _secretA;
@@ -157,7 +159,7 @@ contract Stage2{
     // 赌局结算 
     // 随机种子：使用 A 和 B 的私钥、区块号、时间戳和参与者地址
     // 结果：赢的人拿走所有赌注和stage1中token奖励
-    function _diceGameSettle() private nonReentrant{
+    function _diceGameSettle() private {
         // 使用多个熵源生成更安全的随机数
         // 包括：双方秘密、区块号、区块时间戳、参与者地址
         bytes32 randomSeed = keccak256(abi.encodePacked(
@@ -168,6 +170,7 @@ contract Stage2{
             gamblerA,
             gamblerB
         ));
+        // 骰子结果：1-6
         uint256 n = (uint256(randomSeed) % 6) + 1;
         // 默认规则：1-3 A 胜，4-6 B 胜
         winner = n <= 3 ? gamblerA : gamblerB; 

@@ -303,7 +303,6 @@ contract Stage1 {
      * - 仅所有者可调用
      * - selfdestruct 是不可逆操作
      * 
-     * @warning 警告：调用此函数后合约将被永久销毁，无法恢复
      * @notice 谨慎使用，确保所有业务逻辑已完成后再调用
      */
     function close() external {

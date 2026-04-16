@@ -217,7 +217,7 @@ Malicious Receiver Contract & May have fallback that reverts or reenters \\
 \toprule
 \textbf{\#} & \textbf{Hazard} & \textbf{Mitigation} \\
 \midrule
-1 & \textbf{Reentrancy} & \texttt{nonReentrant} modifier on all ETH-transferring functions (\texttt{sell()}, \texttt{close()}, \texttt{\_diceGameSettle()}, \texttt{checkTimeout()}, \texttt{cancelGame()}) \\
+1 & \textbf{Reentrancy} & \texttt{nonReentrant} modifier on ETH-transferring functions that use external calls (\texttt{sell()}, \texttt{\_diceGameSettle()}, \texttt{checkTimeout()}, \texttt{cancelGame()}) \\
 2 & \textbf{DoS with Revert} & Checks-Effects-Interactions pattern: state updated before external calls; require statements with clear error messages. However, if a malicious receiver contract deliberately reverts in its fallback, settlement can be blocked indefinitely (no withdraw mechanism implemented). \\
 3 & \textbf{State Machine Integrity} & Enum-based state (\texttt{DiceGameState}) with explicit state checks in every function; custom errors for invalid transitions \\
 4 & \textbf{Access Control} & \texttt{require(msg.sender == owner)} for owner-only functions; \texttt{require(msg.sender == gamblerA/B)} for reveal functions \\

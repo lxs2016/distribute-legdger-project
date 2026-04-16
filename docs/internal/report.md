@@ -585,3 +585,12 @@ contract Stage2{
 
 ---
 
+## Appendix D: Team Contribution Declaration
+
+| Member Name | Student ID | Contribution (%) | Main Responsibilities |
+|-------------|------------|------------------|----------------------|
+| LIU Xinsheng | 25065865g | 70% | Stage 1 and 2 architecture design and coding, algorithm optimization, testing, and demo video recording. |
+| MA Jiyuan | 25116696g | 30% | Debugging, project security optimization, and documentation and report writing. |
+
+---
+

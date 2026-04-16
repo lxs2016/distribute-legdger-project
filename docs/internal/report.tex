@@ -1,4 +1,5 @@
 \documentclass[10pt,a4paper]{article}
+
 \usepackage[margin=0.8in]{geometry}
 \usepackage{booktabs}
 \usepackage{hyperref}
@@ -58,7 +59,8 @@
 }
 
 \newcommand{\warn}[1]{\textcolor{red}{[警告：#1]}}
-\newcommand{\txph}{\textcolor{red}{\href{https://sepolia.etherscan.io/tx/0x0000000000000000000000000000000000000000000000000000000000000000}{\texttt{0x000000...0000}}}}
+\newcommand{\missingtx}{\textcolor{red}{\href{https://sepolia.etherscan.io/tx/0x0000000000000000000000000000000000000000000000000000000000000000}{\texttt{0x000000...0000}}}}
+\newcommand{\missingaddr}{\textcolor{red}{[警告：合约地址待补充]}}
 \newcommand{\fillin}[1]{\textcolor{red}{[警告：#1]}}
 
 \title{Token-Backed Rolling the Dice\\Project Report}
@@ -71,13 +73,13 @@
 
 \section{Deployment Summary}
 \begin{itemize}
-  \item \textbf{Contract addresses (Sepolia):}
+  \item \textbf{Contract Addresses (Sepolia):}
   \begin{itemize}
-    \item \textbf{Token Contract (Stage1):} \txph
-    \item \textbf{Dice Contract (Stage2):} \txph
+    \item \textbf{Token Contract (Stage1):} \missingaddr
+    \item \textbf{Dice Contract (Stage2):} \missingaddr
   \end{itemize}
-  \item \textbf{Tooling used:} Remix IDE for compilation, deployment, and interaction; MetaMask for wallet management; Sepolia test network.
-  \item \textbf{Betting/Reward mechanism:} ETH-only betting with equal amounts from both players.
+  \item \textbf{Tooling Used:} Remix IDE for compilation, deployment, and interaction; MetaMask for wallet management; Sepolia test network.
+  \item \textbf{Betting/Reward Mechanism:} ETH-only betting with equal amounts from both players.
   \begin{itemize}
     \item Winner-takes-all ETH plus a fixed token bonus.
     \item 100 DICE tokens are paid per game from a pre-funded pool.
@@ -93,14 +95,14 @@
   \item \textbf{Edge-case handling:}
   \begin{itemize}
     \item Insufficient balance: \texttt{require(\_balances[msg.sender] >= value)}.
-    \item Zero value: \texttt{require(value > 0, "cannot sell zero or below")}.
+    \item Zero value: \texttt{require(value > 0, "cannot sell zero or below") }.
     \item Insufficient ETH: \texttt{require(address(this).balance >= weiRequired)}.
     \item Zero address: prevented in \texttt{transfer()} and \texttt{mint()}.
   \end{itemize}
 \end{itemize}
 
 \section{Stage 2 Dice Game: Protocol and State Machine}
-\noindent\textbf{State Diagram}
+\textbf{State Diagram}
 
 \begin{center}
 \begin{verbatim}
@@ -110,10 +112,9 @@
 \end{verbatim}
 \end{center}
 
-\noindent\textbf{State Descriptions}
+\textbf{State Descriptions}
 
-\smallskip
-\noindent\begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}p{0.18\textwidth}>{\raggedright\arraybackslash}p{0.30\textwidth}>{\raggedright\arraybackslash}p{0.24\textwidth}X@{}}
+\begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}p{0.18\textwidth}>{\raggedright\arraybackslash}p{0.30\textwidth}>{\raggedright\arraybackslash}p{0.24\textwidth}X@{}}
 \toprule
 \textbf{State} & \textbf{Allowed Actions} & \textbf{Who Can Call} & \textbf{Transitions} \\
 \midrule
@@ -125,7 +126,7 @@ Settled & (game complete) & N/A & $\rightarrow$ None (automatic reset) \\
 \end{tabularx}
 
 \medskip
-\noindent\textbf{Randomness Approach}
+\textbf{Randomness Approach}
 \begin{itemize}
   \item Mechanism: Commit-Reveal with multi-source entropy.
   \item Entropy sources: \texttt{secretA}, \texttt{secretB}, \texttt{block.number}, \texttt{block.timestamp}, \texttt{gamblerA}, \texttt{gamblerB}.
@@ -133,7 +134,7 @@ Settled & (game complete) & N/A & $\rightarrow$ None (automatic reset) \\
   \item Winner rule: \texttt{(uint256(randomSeed) \% 6) + 1} gives \(n \in \{1,2,3,4,5,6\}\); \(n \in \{1,2,3\}\) means A wins, \(n \in \{4,5,6\}\) means B wins.
 \end{itemize}
 
-\noindent\textbf{Betting/Reward Mechanism}
+\textbf{Betting/Reward Mechanism}
 \begin{itemize}
   \item What is bet: ETH only (equal amounts from both players).
   \item When deposits happen: Player A deposits in \texttt{createDiceGame()}, and Player B deposits in \texttt{joinGame()} with the same amount.
@@ -145,10 +146,9 @@ Settled & (game complete) & N/A & $\rightarrow$ None (automatic reset) \\
 \section{Security \& Fairness Design}
 \begingroup
 \small
-\noindent\textbf{Threat Model}
+\textbf{Threat Model}
 
-\smallskip
-\noindent\begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}p{0.28\textwidth}X@{}}
+\begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}p{0.28\textwidth}X@{}}
 \toprule
 \textbf{Adversary} & \textbf{Description/Capability} \\
 \midrule
@@ -161,10 +161,9 @@ Malicious Receiver Contract & May have a reverting fallback or attempt reentranc
 \end{tabularx}
 
 \medskip
-\noindent\textbf{Code-Level Hazards \& Mitigations}
+\textbf{Code-Level Hazards \& Mitigations}
 
-\smallskip
-\noindent\begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}p{0.28\textwidth}X@{}}
+\begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}p{0.28\textwidth}X@{}}
 \toprule
 \textbf{Hazard} & \textbf{Mitigation} \\
 \midrule
@@ -178,10 +177,9 @@ Input Validation & Zero-address checks, zero-value checks, and fingerprint valid
 \end{tabularx}
 
 \medskip
-\noindent\textbf{Mechanism-Level Hazards \& Mitigations}
+\textbf{Mechanism-Level Hazards \& Mitigations}
 
-\smallskip
-\noindent\begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}p{0.28\textwidth}X@{}}
+\begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}p{0.28\textwidth}X@{}}
 \toprule
 \textbf{Hazard} & \textbf{Mitigation} \\
 \midrule
@@ -197,16 +195,16 @@ Replay Attacks & The game state resets after settlement, so old secrets and fing
 \end{tabularx}
 
 \medskip
-\noindent\textbf{Trade-offs}
+\textbf{Trade-offs}
 
-\smallskip
-\noindent\begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}p{0.30\textwidth}X@{}}
+\begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}p{0.30\textwidth}X@{}}
 \toprule
 \textbf{Trade-off Aspect} & \textbf{Decision \& Justification} \\
 \midrule
 Security vs Gas Cost & Multi-source randomness and Commit-Reveal increase storage and computation, so gas is higher; this cost is accepted to preserve fairness. Fixed constants and efficient packing reduce overhead. \\
 Simplicity vs Flexibility & A fixed 100 DICE bonus is simpler but less flexible than dynamic rewards; it was chosen for predictability and easier solvency verification. \\
 Timeout Duration vs User Experience & The 30-minute timeout balances security (enough time for reveals) and usability (not waiting too long); it could be parameterized in future versions. \\
+Push vs Pull Payment & Direct \texttt{call\{value\}} gives simple UX but can be blocked by a reverting receiver; a pull-payment design would be safer, but was not implemented due to added complexity and gas cost. \\
 \bottomrule
 \end{tabularx}
 \endgroup
@@ -214,7 +212,21 @@ Timeout Duration vs User Experience & The 30-minute timeout balances security (e
 \section{Gas and Fairness Evaluation}
 \begin{itemize}
   \item \textbf{Deployment gas:} Stage 1 (Token) is approximately 800,000 gas; Stage 2 (Dice) is approximately 1,200,000 gas.
-  \item \textbf{Typical full game gas:} \texttt{createDiceGame} \(\sim 150{,}000\), \texttt{joinGame} \(\sim 120{,}000\), \texttt{revealA} \(\sim 80{,}000\), \texttt{revealB + settle} \(\sim 180{,}000\); total \(\sim 530{,}000\), split roughly as A \(\sim 230k\) and B \(\sim 300k\).
+\end{itemize}
+
+\begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}p{0.40\textwidth}>{\raggedright\arraybackslash}p{0.24\textwidth}X@{}}
+\toprule
+\textbf{Operation} & \textbf{Estimated Gas} & \textbf{Who Pays} \\
+\midrule
+createDiceGame & \textasciitilde 150,000 & Player A \\
+joinGame & \textasciitilde 120,000 & Player B \\
+revealA & \textasciitilde 80,000 & Player A \\
+revealB + settle & \textasciitilde 180,000 & Player B \\
+\textbf{Total} & \textasciitilde 530,000 & Split: A \textasciitilde 230k, B \textasciitilde 300k \\
+\bottomrule
+\end{tabularx}
+
+\begin{itemize}
   \item \textbf{Fairness analysis:}
   \begin{itemize}
     \item Player B pays slightly more gas because settlement happens in \texttt{revealB} if A revealed first.
@@ -227,43 +239,40 @@ Timeout Duration vs User Experience & The 30-minute timeout balances security (e
 \section{Test Evidence}
 \begingroup
 \small
-\noindent\textbf{Full Game Execution on Sepolia}
+\textbf{Full Game Execution on Sepolia}
 
-\smallskip
-\noindent\begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}p{0.18\textwidth}>{\raggedright\arraybackslash}p{0.24\textwidth}>{\raggedright\arraybackslash}p{0.50\textwidth}@{}}
+\begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}p{0.18\textwidth}>{\raggedright\arraybackslash}p{0.24\textwidth}>{\raggedright\arraybackslash}p{0.50\textwidth}@{}}
 \toprule
 \textbf{Step} & \textbf{Transaction Hash} & \textbf{Description} \\
 \midrule
-Create Game & \txph & Player A creates game with 0.01 ETH bet. \\
-Join Game & \txph & Player B joins with matching 0.01 ETH bet. \\
-Reveal A & \txph & Player A reveals secret. \\
-Reveal B & \txph & Player B reveals secret and triggers settlement. \\
+Create Game & \missingtx & Player A creates game with 0.01 ETH bet. \\
+Join Game & \missingtx & Player B joins with matching 0.01 ETH bet. \\
+Reveal A & \missingtx & Player A reveals secret. \\
+Reveal B & \missingtx & Player B reveals secret and triggers settlement. \\
 \bottomrule
 \end{tabularx}
 
 \medskip
-\noindent\textbf{Token Pool Evidence}
+\textbf{Token Pool Evidence}
 
-\smallskip
-\noindent\begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}p{0.18\textwidth}>{\raggedright\arraybackslash}p{0.24\textwidth}>{\raggedright\arraybackslash}X@{}}
+\begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}p{0.18\textwidth}>{\raggedright\arraybackslash}p{0.24\textwidth}X@{}}
 \toprule
 \textbf{Event} & \textbf{Transaction Hash} & \textbf{Details} \\
 \midrule
-Pool Funding & \txph & 10000 DICE transferred to Stage2. \\
-Bonus Transfer & \txph & 100 DICE sent to the winner. \\
+Pool Funding & \missingtx & 10000 DICE transferred to Stage2. \\
+Bonus Transfer & \missingtx & 100 DICE sent to the winner. \\
 \bottomrule
 \end{tabularx}
 
 \medskip
-\noindent\textbf{Balance Verification}
+\textbf{Balance Verification}
 
-\smallskip
-\noindent\begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}p{0.26\textwidth}>{\raggedright\arraybackslash}p{0.23\textwidth}>{\raggedright\arraybackslash}X@{}}
+\begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}p{0.24\textwidth}>{\raggedright\arraybackslash}p{0.28\textwidth}>{\raggedright\arraybackslash}X@{}}
 \toprule
 \textbf{Address} & \textbf{Before Game} & \textbf{After Game} \\
 \midrule
-Winner ETH & \warn{X.XX ETH} & \warn{X.XX + 0.02 ETH} \\
-Winner DICE & \warn{XXX DICE} & \warn{XXX + 100 DICE} \\
+Winner ETH & X.XX ETH & X.XX + 0.02 ETH \\
+Winner DICE & XXX DICE & XXX + 100 DICE \\
 Stage2 ETH & 0.02 ETH & 0 ETH \\
 Stage2 DICE & 10000 DICE & 9900 DICE \\
 \bottomrule
@@ -273,34 +282,56 @@ Stage2 DICE & 10000 DICE & 9900 DICE \\
 \newpage
 \appendix
 
+\section*{AI Usage Declaration}
+\begin{itemize}
+  \item \textbf{Tools Used:} Cursor; Gemini.
+  \item \textbf{Scope of Use:} The team led all core work, including low-level algorithm design, optimization strategy, report structure, and main content writing. AI tools were used only as efficiency aids for architecture organization, Solidity syntax and gas optimization suggestions, debugging support, security/fairness review, and English polishing.
+  \item \textbf{Verification:} The team reviewed, tested, and iterated on all AI-assisted code, and can explain and justify every implementation detail independently.
+\end{itemize}
+
 \section{Transaction History}
-\begingroup
-\footnotesize
-\begin{longtable}{@{}>{\raggedright\arraybackslash}p{0.05\textwidth}>{\raggedright\arraybackslash}p{0.11\textwidth}>{\raggedright\arraybackslash}p{0.18\textwidth}>{\raggedright\arraybackslash}p{0.23\textwidth}>{\raggedright\arraybackslash}p{0.33\textwidth}@{}}
+\small
+
+\subsection*{Stage 1 Token Transactions}
+\begin{longtable}{@{}p{0.08\textwidth}p{0.18\textwidth}p{0.28\textwidth}p{0.40\textwidth}@{}}
 \toprule
-\textbf{\#} & \textbf{Phase} & \textbf{Operation} & \textbf{Transaction Hash} & \textbf{Brief Notes} \\
+\textbf{\#} & \textbf{Operation} & \textbf{Transaction Hash} & \textbf{Notes} \\
 \midrule
 \endfirsthead
 \toprule
-\textbf{\#} & \textbf{Phase} & \textbf{Operation} & \textbf{Transaction Hash} & \textbf{Brief Notes} \\
+\textbf{\#} & \textbf{Operation} & \textbf{Transaction Hash} & \textbf{Notes} \\
 \midrule
 \endhead
-1 & Stage 1 & Deploy & \txph & Constructor: name=\texttt{"DiceToken"}, symbol=\texttt{"DICE"}. \\
-2 & Stage 1 & Mint & \txph & Mint 1000 DICE to deployer. \\
-3 & Stage 1 & Transfer & \txph & Transfer 100 DICE to test address. \\
-4 & Stage 1 & Sell & \txph & Sell 50 DICE for 30000 wei. \\
-5 & Stage 2 & Deploy & \txph & Constructor: \texttt{tokenContract=Stage1 address}. \\
-6 & Stage 2 & Fund Pool & \txph & Transfer 10000 DICE to Stage2. \\
-7 & Stage 2 & Create Game & \txph & Player A, 0.01 ETH bet. \\
-8 & Stage 2 & Join Game & \txph & Player B, 0.01 ETH bet. \\
-9 & Stage 2 & Reveal A & \txph & Player A reveals secret. \\
-10 & Stage 2 & Reveal B & \txph & Player B reveals, settlement. \\
+1 & Deploy & \missingtx & Constructor: name=``DiceToken'', symbol=``DICE'' \\
+2 & Mint & \missingtx & Mint 1000 DICE to deployer \\
+3 & Transfer & \missingtx & Transfer 100 DICE to test address \\
+4 & Sell & \missingtx & Sell 50 DICE for 30000 wei \\
 \bottomrule
 \end{longtable}
-\endgroup
+
+\subsection*{Stage 2 Dice Transactions}
+\begin{longtable}{@{}p{0.08\textwidth}p{0.18\textwidth}p{0.28\textwidth}p{0.40\textwidth}@{}}
+\toprule
+\textbf{\#} & \textbf{Operation} & \textbf{Transaction Hash} & \textbf{Notes} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{\#} & \textbf{Operation} & \textbf{Transaction Hash} & \textbf{Notes} \\
+\midrule
+\endhead
+1 & Deploy & \missingtx & Constructor: tokenContract=Stage1 address \\
+2 & Fund Pool & \missingtx & Transfer 10000 DICE to Stage2 \\
+3 & Create Game & \missingtx & Player A, 0.01 ETH bet \\
+4 & Join Game & \missingtx & Player B, 0.01 ETH bet \\
+5 & Reveal A & \missingtx & Player A reveals secret \\
+6 & Reveal B & \missingtx & Player B reveals, settlement \\
+\bottomrule
+\end{longtable}
 
 \section{Source Code}
-\begin{lstlisting}
+
+\subsection*{Stage1.sol}
+\begin{lstlisting}[caption={Stage1.sol}]
 pragma solidity ^0.8.0;
 
 contract Stage1{
@@ -399,13 +430,16 @@ contract Stage1{
 
     function close() external {
         require(msg.sender == owner, "only owner may call");
-        uint256 balance = address(this).balance;
-        (bool sent, ) = payable(owner).call{value: balance}("");
-        require(sent, "ETH transfer failed");
+        selfdestruct(owner);
     }
 
     receive() external payable {}
 }
+\end{lstlisting}
+
+\subsection*{Stage2.sol}
+\begin{lstlisting}[caption={Stage2.sol}]
+pragma solidity ^0.8.0;
 
 interface IStage1 {
     function transfer(address to, uint256 value) external returns (bool);
@@ -607,30 +641,21 @@ contract Stage2{
 }
 \end{lstlisting}
 
-\section*{AI Usage Declaration}
-\begin{itemize}
-  \item \textbf{Tools Used:} \fillin{使用的 AI 工具，如 ChatGPT, Claude 等}
-  \item \textbf{Scope of Use:} \fillin{AI 使用范围，例如代码生成、安全审查、报告润色等}
-  \item \textbf{Verification:} \fillin{声明如何验证了 AI 生成的内容，例如通过独立编写单元测试验证逻辑}
-\end{itemize}
-
-\textit{Report generated: March 2026}
-
 \newpage
 \section*{Team Contribution Declaration}
-\begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}p{0.25\textwidth}|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|}
+\begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}p{0.28\textwidth}|X|X|}
 \hline
-\textbf{Field} & \textbf{Member 1} & \textbf{Member 2} \\
+\textbf{Member Information} & \textbf{Member 1} & \textbf{Member 2} \\
 \hline
-Name & \fillin{name} & \fillin{name or leave blank if not applicable} \\
+\textbf{Name} & \fillin{Member 1 name missing} & \fillin{Member 2 name missing} \\
 \hline
-Student ID & \fillin{student ID} & \fillin{student ID or leave blank if not applicable} \\
+\textbf{Student ID} & \fillin{Member 1 student ID missing} & \fillin{Member 2 student ID missing} \\
 \hline
-Contribution & \fillin{specific contract/report work} & \fillin{specific contract/report work or leave blank if not applicable} \\
+\textbf{Contribution Description} & \fillin{Please add the exact contract/report work completed by Member 1} & \fillin{Please add the exact contract/report work completed by Member 2} \\
 \hline
-Percentage & \fillin{percentage} & \fillin{percentage or leave blank if not applicable} \\
+\textbf{Percentage of Effort} & \fillin{\% missing} & \fillin{\% missing} \\
 \hline
-Signature & \fillin{signature} & \fillin{signature or leave blank if not applicable} \\
+\textbf{Signature} & \fillin{Signature missing} & \fillin{Signature missing} \\
 \hline
 \end{tabularx}
 

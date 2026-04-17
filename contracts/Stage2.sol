@@ -9,17 +9,6 @@ interface IStage1 {
 }
 
 contract Stage2{
-    // 重入防护锁
-    bool private _locked = false;
-    
-    // 重入防护修饰器
-    modifier nonReentrant() {
-        require(!_locked, "Reentrant call");
-        _locked = true;
-        _;
-        _locked = false;
-    }
-    
     // 游戏状态枚举
     enum DiceGameState { None, WaitingForB, BothBetted, Settled }
     // stateMachine
@@ -78,7 +67,7 @@ contract Stage2{
     }
 
     // 第一阶段：A 下注 第一个人默认选小 1-3胜
-    function createDiceGame(bytes32 _fingerPrintForA) external payable nonReentrant{
+    function createDiceGame(bytes32 _fingerPrintForA) external payable{
         // 状态机校验
         if (diceGameState != DiceGameState.None) revert WrongState(DiceGameState.None, diceGameState);
         // A 下注价格为0
@@ -99,7 +88,7 @@ contract Stage2{
     }
 
     // 第二阶段 B 下注 默认选大 4-6胜
-    function joinGame(bytes32 _fingerPrintForB) external payable nonReentrant {
+    function joinGame(bytes32 _fingerPrintForB) external payable {
         if (diceGameState != DiceGameState.WaitingForB) revert WrongState(DiceGameState.WaitingForB, diceGameState);
         // 不准同一个人同时参与一局游戏 防止刷token
         if (msg.sender == gamblerA) revert DuplicateParticipant(msg.sender);
@@ -119,7 +108,7 @@ contract Stage2{
     }
 
     // A 投注结果
-    function revealA(bytes32 _secretA) external nonReentrant {
+    function revealA(bytes32 _secretA) external {
         if (diceGameState != DiceGameState.BothBetted) revert WrongState(DiceGameState.BothBetted, diceGameState);
         // 防止非本人揭示赌注
         if (msg.sender != gamblerA) revert NotBetOwner(msg.sender, gamblerA);
@@ -138,8 +127,8 @@ contract Stage2{
     }
 
 
-    // B 投注结果
-    function revealB(bytes32 _secretB) external nonReentrant {
+    // B 投注结果（说明同 revealA）
+    function revealB(bytes32 _secretB) external {
         if (diceGameState != DiceGameState.BothBetted) revert WrongState(DiceGameState.BothBetted, diceGameState);
         // 防止非本人揭示赌注
         if (msg.sender != gamblerB) revert NotBetOwner(msg.sender, gamblerB);
@@ -180,7 +169,7 @@ contract Stage2{
         uint256 balanceOfStage1 = tokenContract.balanceOf(address(this)); 
         uint256 stage1TokenBonus = balanceOfStage1 >= TOKEN_BONUS ? TOKEN_BONUS : balanceOfStage1;
 
-        // Checks-effects-interactions：先改状态、发事件，再对外转 ETH/代币（防重入）
+    // Checks-effects-interactions：先改状态、发事件，再对外转 ETH/代币
         // 注意：必须在外部转账之后再 _reset()，否则 winner 会被清空（变成 address(0)）
         address localWinner = winner;
         uint256 localProfits = profits;
@@ -223,7 +212,7 @@ contract Stage2{
 
     // 超时检查函数
     // 如果游戏超时，允许一方强制获胜
-    function checkTimeout() external nonReentrant {
+    function checkTimeout() external {
         // 只有在BothBetted状态下才能检查超时
         if (diceGameState != DiceGameState.BothBetted) revert WrongState(DiceGameState.BothBetted, diceGameState);
         
@@ -250,7 +239,7 @@ contract Stage2{
         uint256 balanceOfStage1 = tokenContract.balanceOf(address(this)); 
         uint256 stage1TokenBonus = balanceOfStage1 >= TOKEN_BONUS ? TOKEN_BONUS : balanceOfStage1;
 
-        // Checks-effects-interactions：先改状态、发事件，再对外转 ETH/代币（防重入）
+       
         // 注意：必须在外部转账之后再 _reset()，否则 winner 会被清空（变成 address(0)）
         address localWinner = winner;
         uint256 localProfits = profits;
@@ -278,7 +267,7 @@ contract Stage2{
     
     // 取消游戏功能
     // 只有在WaitingForB状态下，创建者可以取消游戏
-    function cancelGame() external nonReentrant {
+    function cancelGame() external {
         // 只有在WaitingForB状态下才能取消
         if (diceGameState != DiceGameState.WaitingForB) revert WrongState(DiceGameState.WaitingForB, diceGameState);
         // 只有游戏创建者可以取消

@@ -181,17 +181,22 @@ contract Stage2{
         uint256 stage1TokenBonus = balanceOfStage1 >= TOKEN_BONUS ? TOKEN_BONUS : balanceOfStage1;
 
         // Checks-effects-interactions：先改状态、发事件，再对外转 ETH/代币（防重入）
+        // 注意：必须在外部转账之后再 _reset()，否则 winner 会被清空（变成 address(0)）
+        address localWinner = winner;
+        uint256 localProfits = profits;
+        uint256 localTokenBonus = stage1TokenBonus;
         diceGameState = DiceGameState.Settled;
-        emit DiceGameSettled(winner, profits, stage1TokenBonus);
+        emit DiceGameSettled(localWinner, localProfits, localTokenBonus);
 
-        // 先 reset 再转账
-        _reset(); 
-        (bool sent, ) = payable(winner).call{value: profits}("");
+        // 先对外转账，再清空状态（确保资金发给正确 winner）
+        (bool sent, ) = payable(localWinner).call{value: localProfits}("");
         require(sent, "Bet profits failed to send");
-        if (stage1TokenBonus > 0) {
-            bool tokenSent = tokenContract.transfer(winner, stage1TokenBonus);
+        if (localTokenBonus > 0) {
+            bool tokenSent = tokenContract.transfer(localWinner, localTokenBonus);
             require(tokenSent, "Stage1token bonus failed to send");
         }
+
+        _reset();
     }
 
 
@@ -246,17 +251,22 @@ contract Stage2{
         uint256 stage1TokenBonus = balanceOfStage1 >= TOKEN_BONUS ? TOKEN_BONUS : balanceOfStage1;
 
         // Checks-effects-interactions：先改状态、发事件，再对外转 ETH/代币（防重入）
+        // 注意：必须在外部转账之后再 _reset()，否则 winner 会被清空（变成 address(0)）
+        address localWinner = winner;
+        uint256 localProfits = profits;
+        uint256 localTokenBonus = stage1TokenBonus;
         diceGameState = DiceGameState.Settled;
-        emit DiceGameSettled(winner, profits, stage1TokenBonus);
+        emit DiceGameSettled(localWinner, localProfits, localTokenBonus);
 
-        // 先 reset 再转账
-        _reset(); 
-        (bool sent, ) = payable(winner).call{value: profits}("");
+        // 先对外转账，再清空状态（确保资金发给正确 winner）
+        (bool sent, ) = payable(localWinner).call{value: localProfits}("");
         require(sent, "Bet profits failed to send");
-        if (stage1TokenBonus > 0) {
-            bool tokenSent = tokenContract.transfer(winner, stage1TokenBonus);
+        if (localTokenBonus > 0) {
+            bool tokenSent = tokenContract.transfer(localWinner, localTokenBonus);
             require(tokenSent, "Stage1token bonus failed to send");
         }
+
+        _reset();
     }
     
     // 查询剩余超时时间（秒）
@@ -292,7 +302,5 @@ contract Stage2{
         if (block.timestamp > gameCreatedAt + TIMEOUT_DURATION) return 0;
         return gameCreatedAt + TIMEOUT_DURATION - block.timestamp;
     }
-
-
 
 }
